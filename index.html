@@ -651,7 +651,7 @@ function syncCard(){
   if(!s) return `<p class="small ink2" style="margin-top:0">Melde dich auf jedem Gerät einmal an. Danach gleichen iPhone, iPad und Laptop automatisch ab – auch Änderungen, die du offline gemacht hast.</p>
     <label class="f"><span>E-Mail</span><input id="se" type="email" autocomplete="username" value="${esc(ui.loginEmail||'')}"></label>
     <label class="f"><span>Passwort</span><input id="sp" type="password" autocomplete="current-password"></label>
-    <div class="row wrap"><button class="btn primary" data-a="login">Anmelden</button><button class="btn link sm" data-a="signup">Erstes Mal? Konto anlegen</button></div>
+    <div class="row wrap"><button class="btn primary" data-a="login">${ui.authBusy?'Moment …':'Anmelden'}</button><button class="btn link sm" data-a="signup">Erstes Mal? Konto anlegen</button></div>
     ${ui.loginMsg?`<p class="small" style="color:${ui.loginOk?'var(--good)':'var(--bad)'}">${esc(ui.loginMsg)}</p>`:''}`;
   const n=dirtyCount();
   return `<div class="row between"><div><b>${sync.error?'<span style="color:var(--bad)">Sync-Fehler</span>':navigator.onLine?(n?'Wartet auf Abgleich':'Synchron ✓'):'Offline'}</b>
@@ -744,12 +744,14 @@ const A={
     const byEx={};w.sets.forEach(s=>(byEx[s.ex]=byEx[s.ex]||[]).push(s));
     m.innerHTML=`<div class="sheet"><h3>${esc(w.name)} · ${fmtShort(w.date)}</h3>${Object.entries(byEx).map(([ex,ss])=>`<p style="margin:6px 0"><b>${esc(exName(ex))}</b><br><span class="ink2">${ss.map(s=>`${+s.w} kg × ${s.r}`).join(' · ')}</span></p>`).join('')}<div class="row" style="margin-top:12px"><button class="btn" data-x="c">Schließen</button><button class="btn danger" data-x="d" style="margin-left:auto">Löschen</button></div></div>`;
     m.hidden=false;m.querySelector('[data-x=c]').onclick=closeModal;m.querySelector('[data-x=d]').onclick=()=>ask('Training löschen?',()=>{del('workouts',w.id);closeModal();render();},'Löschen');m.onclick=e=>{if(e.target===m)closeModal();};},
-  signup:async()=>{const e=document.getElementById('se').value.trim(),pw=document.getElementById('sp').value;ui.loginEmail=e;ui.loginOk=false;
+  signup:async()=>{if(ui.authBusy)return;ui.authBusy=true;try{await A._signup();}finally{ui.authBusy=false;render();}},
+  _signup:async()=>{const e=document.getElementById('se').value.trim(),pw=document.getElementById('sp').value;ui.loginEmail=e;ui.loginOk=false;
     if(pw.length<8){ui.loginMsg='Passwort bitte mit mindestens 8 Zeichen.';return render();}
     try{const j=await authPost('/auth/v1/signup',{email:e,password:pw});
       if(j.access_token){await afterLogin(j);}else{ui.loginOk=true;ui.loginMsg='Konto angelegt. Bestätige den Link in der E-Mail (die Seite danach darf einen Fehler zeigen) und melde dich dann hier an.';}}
     catch(err){ui.loginMsg=err.message;} render();},
-  login:async()=>{const e=document.getElementById('se').value.trim(),pw=document.getElementById('sp').value;ui.loginEmail=e;ui.loginOk=false;
+  login:async()=>{if(ui.authBusy)return;ui.authBusy=true;try{await A._login();}finally{ui.authBusy=false;render();}},
+  _login:async()=>{const e=document.getElementById('se').value.trim(),pw=document.getElementById('sp').value;ui.loginEmail=e;ui.loginOk=false;
     try{await afterLogin(await authPost('/auth/v1/token?grant_type=password',{email:e,password:pw}));}
     catch(err){ui.loginMsg=/confirm/i.test(err.message)?'Bitte erst den Bestätigungslink in der E-Mail anklicken.':/invalid/i.test(err.message)?'E-Mail oder Passwort falsch.':err.message;} render();},
   syncNow:async()=>{await runSync();render();},
