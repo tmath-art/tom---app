@@ -522,6 +522,8 @@ function viewToday(){
   const nextT=nextTemplate(), lastW=finishedWorkouts().slice(-1)[0], active=all('workouts').find(w=>!w.finished);
   const probs=sch.problems.filter(p=>p.t.kind!=='study');
   let h=`<p class="sub">${WD[isoWd(t)]}, ${fmtDate(t)}</p><h1>${hello}, Tom</h1>${storageOk?'':'<div class="banner">Speichern ist in dieser Ansicht nicht möglich – Daten gehen beim Schließen verloren.</div>'}`;
+  if(syncConfigured()&&!DB.meta.session) h+=`<div class="card warn" style="margin-top:12px"><div class="row between"><div><span class="t">Sync nicht aktiv</span><div class="small ink2">Dieses Gerät speichert nur für sich. Einmal anmelden, dann gleichen alle Geräte ab.</div></div><button class="btn primary sm" data-a="tab" data-k="mehr">Anmelden</button></div></div>`;
+  else if(sync.error) h+=`<div class="card warn" style="margin-top:12px"><span class="t">Sync-Fehler</span><div class="small ink2">${esc(sync.error)}</div></div>`;
   h+=`<h2>Countdowns</h2>${examChips()}`;
   if(probs.length) h+=`<h2>Achtung</h2><div class="card warn">${probs.map(p=>`<div style="margin:4px 0"><span class="t">${esc(p.t.title)}</span><div class="small ink2">${esc(p.msg)}</div></div>`).join('')}</div>`;
   h+=`<h2>Routine</h2>`+routineCard();
